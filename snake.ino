@@ -302,7 +302,12 @@ void showHighscoreDisplay() {
   lcd.setCursor(0, 0);
   lcd.print("---HIGH SCORE---");
   lcd.setCursor(0, 1);
-  lcd.print(eepromHighscoreName + " - " + eepromHighscoreValue);
+
+  if (eepromHighscoreName.length() > 0 &&  eepromHighscoreValue > 0) {
+    lcd.print(eepromHighscoreName + " - " + eepromHighscoreValue);
+  } else {
+    lcd.print("No highscore.");
+  }
 }
 
 void showSettingsDisplay() {
