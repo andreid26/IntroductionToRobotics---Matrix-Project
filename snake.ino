@@ -672,7 +672,11 @@ void handleButtonPressing() {
 void turnOnMatrix() {
   for (byte row = 0; row < matrixSize; row++) {
     for (byte col = 0; col < matrixSize; col++) {
-      lc.setLed(0, row, col, HIGH);
+      if (row >= 3 && row <= 4 && col >= 3 && col <= 4) {
+        lc.setLed(0, row, col, HIGH);
+      } else {
+        lc.setLed(0, row, col, LOW);
+      }
     }
   }
 }
