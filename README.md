@@ -27,7 +27,19 @@ The main menu contains:
             (e) How to play: short and informative description
     3. The navigation through the menu is done by moving the joystick UP and DOWN
     
-## Used components:
+Difficulty informations:
+
+    - For LOW difficulty: 
+            (a) the score increases for every 3 pieces of food
+            (b) the snake moves normal and can pass through the walls
+    - For MEDIUM difficulty:
+            (a) the score increases for every 2 pieces of food
+            (b) the snake moves faster and can pass through the walls
+    - For HIGH difficulty:
+            (a) the score increases for every piece of food
+            (b) the snake moves faster and can't pass through the walls
+    
+## Used components
 
     - Arduino uno main board
     - 8x8 LED Matrix
