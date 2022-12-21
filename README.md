@@ -1,11 +1,11 @@
-## Snake Game
-# Introduction
+# Snake Game
+## Introduction
 This repository contains the matrix project for the 'Introduction to Robotics' course taken in the third year at the Faculty of Mathematics and Informatics, University of Bucharest.
 
-# Game description
+## Game description
 The main idea of the game is a simple one: the player uses a joystick to move a snake made of dots around. As the snake finds food, it eats the food and thereby grows larger. The game ends when the snake either moves off the screen or moves into itself. The goal is to make the snake as large as possible before that happens.
 
-# How to play
+## How to play
 When powering up the game, a greeting message is shown until the joystick button is pressed.
 
 The main menu contains:
@@ -27,7 +27,7 @@ The main menu contains:
             (e) How to play: short and informative description
     3. The navigation through the menu is done by moving the joystick UP and DOWN
     
-# Used components:
+## Used components:
 
     - Arduino uno main board
     - 8x8 LED Matrix
@@ -39,10 +39,10 @@ The main menu contains:
     - Potentiometer (controlling the LCD contrast)
     - Resistors & cables
     
-# Picture of the setup
+## Picture of the setup
 
 <img src="https://user-images.githubusercontent.com/63780942/208868914-badb3f88-ea25-4eb3-8beb-22307ddec848.png" style="width: 50%;"/>
 
-# Demo video
+## Demo video
 
 <a href="https://youtu.be/0qX3Yy0WwqM">Click here</a>
