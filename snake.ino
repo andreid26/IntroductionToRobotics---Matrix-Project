@@ -804,7 +804,7 @@ void generateRandomFood() {
 }
 
 byte isOnFirstOrLastLine(byte row, byte col) {
-  return ((randomRow * randomCol == 0) || (randomRow * randomCol % 7 == 0));  
+  return ((row * col == 0) || (row * col % 7 == 0));  
 }
 
 void handleRunningGame() {
