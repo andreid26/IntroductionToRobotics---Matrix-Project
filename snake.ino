@@ -795,7 +795,7 @@ void generateRandomFood() {
   byte randomRow = generateRandomByte();
   byte randomCol = generateRandomByte();
 
-  while (isPartOfSnake(randomRow, randomCol) || (eepromDifficulty == DIFFICULTY_HIGH && isOnFirstRowOrColumn(randomRow, randomCol))) {
+  while (isPartOfSnake(randomRow, randomCol) || (eepromDifficulty == DIFFICULTY_HIGH && isOnFirstOrLastLine(randomRow, randomCol))) {
     randomRow = generateRandomByte();
     randomCol = generateRandomByte();
   }
@@ -803,7 +803,7 @@ void generateRandomFood() {
   foodPosition.j = randomCol;
 }
 
-byte isOnFirstRowOrColumn(byte row, byte col) {
+byte isOnFirstOrLastLine(byte row, byte col) {
   return ((randomRow * randomCol == 0) || (randomRow * randomCol % 7 == 0));  
 }
 
