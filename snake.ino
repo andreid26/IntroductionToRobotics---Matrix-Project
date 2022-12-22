@@ -2,6 +2,8 @@
 #include <LiquidCrystal.h>
 #include <EEPROM.h>
 
+#define BAUD_RATE 9600
+
 #define MIN_THRESHOLD 300
 #define MAX_THRESHOLD 900
 #define DEBOUNCE_DELAY 50
@@ -47,6 +49,27 @@
 #define BUZZER_INTERVAL 100
 #define BUZZER_LONG_INTERVAL 500
 
+#define LCD_MAX_BRIGHTNESS 255
+#define MATRIX_MAX_BRIGHTNESS 15
+
+#define LCD_BRIGHTNESS_INCREMENT 15
+#define MATRIX_BRIGHTNESS_INCREMENT 1
+#define DIFFICULTY_INCREMENT 1
+
+#define LCD_ICON_SIZE
+#define LCD_COLS_NUMBER 16
+
+#define MATRIX_BRIGHTNESS_ON_START 3
+#define MATRIX_BRIGHTNESS_ON_STOP 4
+
+#define SOUND_ON  1
+#define SOUND_OFF 0
+
+#define HTP_TEXT_MOVE_LENGTH 5
+
+#define GAME_START_SCORE 0
+#define GAME_START_SNAKE_LENGTH 0
+
 struct Point {
   byte i;
   byte j;
@@ -87,18 +110,19 @@ int yAxisValue = 0;
 bool joyMoved = false;
 byte buttonState = LOW;
 
+const byte neutral = 0;
 const byte up = 1;
 const byte down = 2;
 const byte left = 3;
 const byte right = 4;
-byte currentDirection = 0;
+byte currentDirection = neutral;
 
 // Button debouncing
 unsigned long lastDebounceTime = 0;
-unsigned long lastButtonStateChanges;
+unsigned long lastButtonStateChanges = 0;
 
-byte buttonReading;
-byte lastButtonReading;
+byte buttonReading = 0;
+byte lastButtonReading = 0;
 
 // Buzzer declarations
 const int buzzerPin = A3;
@@ -110,12 +134,12 @@ String htpText = "The player uses a joystick to move the snake around. As the sn
 byte textStartPosition = 0;
 
 // EEPROM values
-byte eepromLcdBrightness;
-byte eepromMatrixBrightness;
-byte eepromSoundControl;
-byte eepromHighscoreValue;
-byte eepromDifficulty;
-String eepromHighscoreName;
+byte eepromLcdBrightness = LCD_MAX_BRIGHTNESS;
+byte eepromMatrixBrightness = MATRIX_MAX_BRIGHTNESS;
+byte eepromDifficulty = DIFFICULTY_LOW;
+byte eepromSoundControl = 0;
+byte eepromHighscoreValue = 0;
+String eepromHighscoreName = "";
 
 // Game configurations
 String settings[] = {
@@ -138,7 +162,7 @@ byte isSettingsOptionLocked = 0;
 byte settingsMatrixTurnedOn = 0;
 
 // LCD Icons
-const byte arrowDown[8] = {
+const byte arrowDown[LCD_ICON_SIZE] = {
   B00100,
   B00100,
   B00100,
@@ -148,7 +172,7 @@ const byte arrowDown[8] = {
   B01110,
   B00100
 };
-const byte arrowUp[8] = {
+const byte arrowUp[LCD_ICON_SIZE] = {
   B00100,
   B01110,
   B10101,
@@ -188,7 +212,6 @@ String name = "GUEST";
 byte isGameRunning = 0;
 byte inGameOverDisplay = 0;
 byte gameScore = 0;
-byte gameLives = 3;
 byte speed = LOW_SPEED;
 byte foodEaten = 0;
 byte snakeLength = 1;
@@ -201,7 +224,7 @@ unsigned long lastMoveTime = 0;
 
 
 void initializePins() {
-  Serial.begin(9600);
+  Serial.begin(BAUD_RATE);
   pinMode(pinSW, INPUT_PULLUP);
   pinMode(brightnessPin, OUTPUT);
 }
@@ -293,7 +316,7 @@ void showMenuDisplay() {
 
 void showRunningGameDisplay() {
   lcd.setCursor(0, 0);
-  lcd.print("Name: " + eepromHighscoreName);
+  lcd.print("Name: " + name);
   lcd.setCursor(0, 1);
   lcd.print("Score: " + String(gameScore));
 }
@@ -342,7 +365,7 @@ void showInfoDisplay() {
 void showHTPDisplay() {
   lcd.setCursor(0, 0);
   lcd.clear();
-  lcd.print(htpText.substring(textStartPosition, textStartPosition + 16));
+  lcd.print(htpText.substring(textStartPosition, textStartPosition + LCD_COLS_NUMBER));
   lcd.setCursor(0, 1);
   lcd.print("     <    >     ");  
 }
@@ -386,7 +409,7 @@ byte getFaceItem(byte faceType, byte row, byte col) {
 }
 
 String getSoundMessage() {
-  if (eepromSoundControl == 1) return "ON";
+  if (eepromSoundControl == SOUND_ON) return "ON";
 
   return "OFF";
 }
@@ -521,26 +544,26 @@ byte handleUpMovementForSettings() {
   }
 
   if (isSettingsOptionLocked && settingsCurrentIndex == settingsDiffIndex && eepromDifficulty < DIFFICULTY_HIGH) {
-    eepromDifficulty += 1;
+    eepromDifficulty += DIFFICULTY_INCREMENT;
     EEPROM.update(DIFFICULTY_ADDR, eepromDifficulty);
     return 1;
   }
       
-  if (isSettingsOptionLocked && settingsCurrentIndex == settingsSoundIndex && eepromSoundControl == 0) {
-    eepromSoundControl = 1;
+  if (isSettingsOptionLocked && settingsCurrentIndex == settingsSoundIndex && eepromSoundControl == SOUND_OFF) {
+    eepromSoundControl = SOUND_ON;
     EEPROM.update(SOUND_CONTROL_ADDR, eepromSoundControl);
     return 1;        
   }
 
-  if (isSettingsOptionLocked && settingsCurrentIndex == settingsLcdBrIndex && eepromLcdBrightness <= 240) {
-    eepromLcdBrightness += 15;
+  if (isSettingsOptionLocked && settingsCurrentIndex == settingsLcdBrIndex && eepromLcdBrightness <= (LCD_MAX_BRIGHTNESS - LCD_BRIGHTNESS_INCREMENT)) {
+    eepromLcdBrightness += LCD_BRIGHTNESS_INCREMENT;
     analogWrite(brightnessPin, eepromLcdBrightness);
     EEPROM.update(LCD_BRIGHTNESS_ADDR, eepromLcdBrightness);
     return 1;
   }
 
-  if (isSettingsOptionLocked && settingsCurrentIndex == settingsMatBrIndex && eepromMatrixBrightness < 15) {
-    eepromMatrixBrightness += 1;
+  if (isSettingsOptionLocked && settingsCurrentIndex == settingsMatBrIndex && eepromMatrixBrightness < MATRIX_MAX_BRIGHTNESS) {
+    eepromMatrixBrightness += MATRIX_BRIGHTNESS_INCREMENT;
     lc.setIntensity(0, eepromMatrixBrightness);
     EEPROM.update(MATRIX_BRIGHTNESS_ADDR, eepromMatrixBrightness);
     return 1;
@@ -561,21 +584,21 @@ byte handleDownMovementForSettings() {
     return 1;
   }
 
-  if (isSettingsOptionLocked && settingsCurrentIndex == settingsSoundIndex && eepromSoundControl == 1) {
-    eepromSoundControl = 0;
+  if (isSettingsOptionLocked && settingsCurrentIndex == settingsSoundIndex && eepromSoundControl == SOUND_ON) {
+    eepromSoundControl = SOUND_OFF;
     EEPROM.update(SOUND_CONTROL_ADDR, eepromSoundControl);
     return 1;
   }
 
-  if (isSettingsOptionLocked && settingsCurrentIndex == settingsLcdBrIndex && eepromLcdBrightness >= 15) {
-    eepromLcdBrightness -= 15;
+  if (isSettingsOptionLocked && settingsCurrentIndex == settingsLcdBrIndex && eepromLcdBrightness >= LCD_BRIGHTNESS_INCREMENT) {
+    eepromLcdBrightness -= LCD_BRIGHTNESS_INCREMENT;
     analogWrite(brightnessPin, eepromLcdBrightness);
     EEPROM.update(LCD_BRIGHTNESS_ADDR, eepromLcdBrightness);
     return 1;
   }
 
-  if (isSettingsOptionLocked && settingsCurrentIndex == settingsMatBrIndex && eepromMatrixBrightness > 0) {
-    eepromMatrixBrightness -= 1;
+  if (isSettingsOptionLocked && settingsCurrentIndex == settingsMatBrIndex && eepromMatrixBrightness >= MATRIX_BRIGHTNESS_INCREMENT) {
+    eepromMatrixBrightness -= MATRIX_BRIGHTNESS_INCREMENT;
     lc.setIntensity(0, eepromMatrixBrightness);
     EEPROM.update(MATRIX_BRIGHTNESS_ADDR, eepromMatrixBrightness);
     return 1;
@@ -588,8 +611,8 @@ void handleJoyLeftMovement() {
   joyMoved = 1;
 
   if (!isGameRunning) {
-    if (currentLcdDisplay == LCD_HTP && textStartPosition >= 5) {
-      textStartPosition -= 5;
+    if (currentLcdDisplay == LCD_HTP && textStartPosition >= HTP_TEXT_MOVE_LENGTH) {
+      textStartPosition -= HTP_TEXT_MOVE_LENGTH;
       showHTPDisplay();
     }
   } else {
@@ -601,8 +624,8 @@ void handleJoyRightMovement() {
   joyMoved = 1;
 
   if (!isGameRunning) {
-    if (currentLcdDisplay == LCD_HTP && textStartPosition <= 170) {
-      textStartPosition += 5;
+    if (currentLcdDisplay == LCD_HTP && textStartPosition <= (htpText.length() - LCD_COLS_NUMBER - HTP_TEXT_MOVE_LENGTH)) {
+      textStartPosition += HTP_TEXT_MOVE_LENGTH;
       showHTPDisplay();
     }
   } else {
@@ -677,7 +700,7 @@ void handleButtonPressing() {
 void turnOnMatrix() {
   for (byte row = 0; row < matrixSize; row++) {
     for (byte col = 0; col < matrixSize; col++) {
-      if (row >= 3 && row <= 4 && col >= 3 && col <= 4) {
+      if (row >= MATRIX_BRIGHTNESS_ON_START && row <= MATRIX_BRIGHTNESS_ON_STOP && col >= MATRIX_BRIGHTNESS_ON_START && col <= MATRIX_BRIGHTNESS_ON_STOP) {
         lc.setLed(0, row, col, HIGH);
       } else {
         lc.setLed(0, row, col, LOW);
@@ -741,14 +764,13 @@ void resetGameData() {
   resetSnakeBody();
   headPosition->i = SNAKE_START_POS;
   headPosition->j = SNAKE_START_POS;
-  currentDirection = 0;
+  currentDirection = neutral;
 
-  gameScore = 0;
-  gameLives = 3;
-  snakeLength = 1;
+  gameScore = GAME_START_SCORE;
+  snakeLength = GAME_START_SNAKE_LENGTH;
 
   generateRandomFood();
-  foodEaten = 0;
+  foodEaten = GAME_START_SCORE;
 }
 
 void resetSnakeBody() {
@@ -773,12 +795,16 @@ void generateRandomFood() {
   byte randomRow = generateRandomByte();
   byte randomCol = generateRandomByte();
 
-  while (isPartOfSnake(randomRow, randomCol) || (eepromDifficulty == DIFFICULTY_HIGH && ((randomRow * randomCol == 0) || (randomRow * randomCol % 7 == 0)))) {
+  while (isPartOfSnake(randomRow, randomCol) || (eepromDifficulty == DIFFICULTY_HIGH && isOnFirstRowOrColumn(randomRow, randomCol))) {
     randomRow = generateRandomByte();
     randomCol = generateRandomByte();
   }
   foodPosition.i = randomRow;
   foodPosition.j = randomCol;
+}
+
+byte isOnFirstRowOrColumn(byte row, byte col) {
+  return ((randomRow * randomCol == 0) || (randomRow * randomCol % 7 == 0));  
 }
 
 void handleRunningGame() {
